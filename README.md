@@ -1,6 +1,6 @@
 # ROAST MY PC 🔥
 
-![Logo](./logo.png)
+![Logo](./logo_readme.png)
 
 **YOUR HARDWARE SUCKS AND WE'LL TELL YOU WHY**
 
