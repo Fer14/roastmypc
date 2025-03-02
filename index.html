@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PC ROASTER</title>
+    <link rel="icon" type="image/png" href="icon.png">
+    <style>
+        body {
+            font-family: monospace;
+            background-color: #000;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            cursor: default;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        header {
+            border-bottom: 4px solid #ff3300;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 48px;
+            text-transform: uppercase;
+            margin: 0;
+            letter-spacing: -2px;
+        }
+        
+        .tagline {
+            font-size: 20px;
+            color: #ff3300;
+            margin-top: 5px;
+        }
+        
+        .scan-btn {
+            background-color: #ff3300;
+            color: #000;
+            border: none;
+            padding: 15px 30px;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            margin: 20px 0;
+        }
+        
+        .scan-btn:hover {
+            background-color: #fff;
+        }
+        
+        #loading {
+            display: none;
+            font-size: 24px;
+            margin: 20px 0;
+        }
+        
+        #results {
+            display: none;
+            margin-top: 30px;
+            border: 2px solid #fff;
+            padding: 20px;
+        }
+        
+        .spec-item {
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .spec-label {
+            font-weight: bold;
+            color: #ff3300;
+        }
+        
+        .spec-value {
+            text-align: right;
+        }
+        
+        .roast-container {
+            margin-top: 30px;
+            padding: 20px;
+            border: 2px solid #ff3300;
+            background-color: #111;
+        }
+        
+        .roast-title {
+            font-size: 28px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+        
+        .roast {
+            font-size: 18px;
+            line-height: 1.4;
+            margin-bottom: 15px;
+        }
+        
+        footer {
+            margin-top: 40px;
+            font-size: 12px;
+            color: #666;
+            text-align: center;
+        }
+        
+        .blink {
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0% { opacity: 1; }
+            50% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+        
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 36px;
+            }
+            
+            .scan-btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><img src="logo.png" alt="PC Roaster Logo" width="400"></h1>
+            <div class="tagline">YOUR HARDWARE SUCKS AND WE'LL TELL YOU WHY</div>
+        </header>
+        
+        <p>Click the button below to scan your PC specs and receive a custom-tailored brutal roast of your setup.</p>
+        
+        <button id="scanButton" class="scan-btn">SCAN MY PC</button>
+        
+        <div id="loading"><span class="blink">ANALYZING YOUR PATHETIC HARDWARE...</span></div>
+        
+        <div id="results">
+            <h2>YOUR SPECS:</h2>
+            <div id="specsList"></div>
+            
+            <div class="roast-container">
+                <div class="roast-title">THE VERDICT</div>
+                <div id="roastContent"></div>
+            </div>
+        </div>
+        
+        <footer>
+            DISCLAIMER: This is just for fun. No PCs were harmed in the making of this roast.
+        </footer>
+    </div>
+
+    <script>
+        document.getElementById('scanButton').addEventListener('click', function() {
+            // Show loading message
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('scanButton').disabled = true;
+            
+            // Simulate scanning delay
+            setTimeout(scanPC, 2000);
+        });
+        
+        function scanPC() {
+            const specs = {};
+            
+            // Get browser info
+            specs.browser = navigator.userAgent;
+            
+            // Get screen resolution
+            specs.resolution = `${window.screen.width}x${window.screen.height}`;
+            
+            // Get color depth
+            specs.colorDepth = `${window.screen.colorDepth}-bit`;
+            
+            // Get device pixel ratio
+            specs.pixelRatio = window.devicePixelRatio;
+            
+            // Get hardware concurrency (approx number of cores)
+            specs.cores = navigator.hardwareConcurrency || 'Unknown';
+            
+            // Get platform
+            specs.platform = navigator.platform;
+            
+            // Get connection type if available
+            if (navigator.connection) {
+                specs.connectionType = navigator.connection.effectiveType || 'Unknown';
+            }
+            
+            // Memory info (only in Chrome)
+            if (navigator.deviceMemory) {
+                specs.memory = `${navigator.deviceMemory} GB`;
+            }
+            
+            // Check for WebGL capabilities and try to get detailed GPU info
+            try {
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                if (gl) {
+                    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                    if (debugInfo) {
+                        specs.gpu = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+                        specs.gpuVendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
+                    }
+                }
+            } catch (e) {
+                specs.gpu = 'Detection failed';
+                specs.gpuVendor = 'Unknown';
+            }
+            
+            // Display the results
+            displayResults(specs);
+        }
+        
+        function displayResults(specs) {
+            const specsList = document.getElementById('specsList');
+            specsList.innerHTML = '';
+            
+            // Display each spec
+            for (const [key, value] of Object.entries(specs)) {
+                const formatKey = key.charAt(0).toUpperCase() + key.slice(1);
+                
+                const specItem = document.createElement('div');
+                specItem.className = 'spec-item';
+                
+                const specLabel = document.createElement('div');
+                specLabel.className = 'spec-label';
+                specLabel.textContent = formatKey;
+                
+                const specValue = document.createElement('div');
+                specValue.className = 'spec-value';
+                specValue.textContent = value;
+                
+                specItem.appendChild(specLabel);
+                specItem.appendChild(specValue);
+                specsList.appendChild(specItem);
+            }
+            
+            // Generate roasts based on specs
+            const roasts = generateRoasts(specs);
+            
+            const roastContent = document.getElementById('roastContent');
+            roastContent.innerHTML = '';
+            
+            roasts.forEach(roast => {
+                const roastP = document.createElement('p');
+                roastP.className = 'roast';
+                roastP.textContent = roast;
+                roastContent.appendChild(roastP);
+            });
+            
+            // Hide loading, show results
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('scanButton').disabled = false;
+        }
+        
+        function generateRoasts(specs) {
+            const roasts = [];
+            
+            // Roast based on resolution
+            if (specs.resolution) {
+                const [width, height] = specs.resolution.split('x').map(Number);
+                if (width < 1920) {
+                    roasts.push(`${specs.resolution}? What is this, a screen for ants? My calculator has more pixels than your pathetic display.`);
+                } else if (width >= 1920 && width < 2560) {
+                    roasts.push(`Oh, 1080p in ${new Date().getFullYear()}? How nostalgic. Next you'll tell me you still use a flip phone.`);
+                } else if (width >= 2560 && width < 3840) {
+                    roasts.push(`${specs.resolution}... not bad. At least your PowerPoint presentations look crisp while your PC struggles to render them.`);
+                } else {
+                    roasts.push(`${specs.resolution}? Compensating for something? All those pixels won't make your coding skills any better.`);
+                }
+            }
+            
+            // Roast based on cores
+            if (specs.cores && specs.cores !== 'Unknown') {
+                const cores = parseInt(specs.cores);
+                if (cores <= 2) {
+                    roasts.push(`${cores} cores? Your CPU isn't multitasking, it's multi-FAILING. Even my toaster processes bread faster than your computer processes data.`);
+                } else if (cores <= 4) {
+                    roasts.push(`${cores} cores? Welcome to 2012! Your CPU is so outdated it probably still thinks Gangnam Style is trending.`);
+                } else if (cores <= 8) {
+                    roasts.push(`${cores} cores is like having a sports car with a lawn mower engine. Looks impressive in the specs, disappoints in real life.`);
+                } else {
+                    roasts.push(`${cores} cores and your PC still lags when you open more than 5 browser tabs? Maybe it's not the hardware that's the problem...`);
+                }
+            }
+            
+            // Roast based on platform
+            if (specs.platform) {
+                if (specs.platform.includes('Win')) {
+                    roasts.push(`Windows? Your PC spends more time updating than actually being useful. It's like paying rent for someone who's never home.`);
+                } else if (specs.platform.includes('Mac')) {
+                    roasts.push(`A Mac user? You paid 3x more for a computer that does 2x less. But hey, at least it looks pretty while it struggles.`);
+                } else if (specs.platform.includes('Linux')) {
+                    roasts.push(`Linux? Let me guess, you also tell everyone you're vegan and do CrossFit within the first 5 minutes of meeting them.`);
+                }
+            }
+            
+            // Roast based on browser
+            if (specs.browser) {
+                if (specs.browser.includes('Chrome')) {
+                    roasts.push(`Chrome? Your RAM sticks tremble in fear every time you open a new tab. Your computer isn't slow, it's just crying.`);
+                } else if (specs.browser.includes('Firefox')) {
+                    roasts.push(`Firefox? Trying to be different, but still basic. It's the computer equivalent of putting a "Live, Laugh, Love" sign in your house.`);
+                } else if (specs.browser.includes('Safari')) {
+                    roasts.push(`Safari? Even your browser choices are as bland and restrictive as your personality.`);
+                } else if (specs.browser.includes('Edge')) {
+                    roasts.push(`Microsoft Edge? You either gave up on life or your computer came like this and you don't know how to change it. Either way, I'm concerned.`);
+                }
+            }
+            
+            // Improved GPU detection and roasting using both GPU and GPU Vendor
+            if ((specs.gpu && specs.gpu !== 'Detection failed') || (specs.gpuVendor && specs.gpuVendor !== 'Unknown')) {
+                const gpuLower = (specs.gpu || '').toLowerCase();
+                const vendorLower = (specs.gpuVendor || '').toLowerCase();
+                
+                // Create combined info for better detection
+                const combinedGpuInfo = `${gpuLower} ${vendorLower}`;
+                
+                // NVIDIA GPU Detection - use both vendor and GPU info
+                if (combinedGpuInfo.includes('nvidia') || combinedGpuInfo.includes('geforce')) {
+                    // Add vendor-specific roast
+                    roasts.push(`NVIDIA user, huh? Let me guess, you think "It just works" is actually true and not marketing propaganda.`);
+                    
+                    // RTX 30 series
+                    if (gpuLower.includes('rtx 30') || gpuLower.includes('rtx 3050') || gpuLower.includes('rtx 3060') || 
+                        gpuLower.includes('rtx 3070') || gpuLower.includes('rtx 3080') || gpuLower.includes('rtx 3090')) {
+                        
+                        if (gpuLower.includes('3050') || gpuLower.includes('3060')) {
+                            roasts.push(`RTX 3050/3060? Ah, the entry-level "I wanted an RTX card but couldn't afford a real one" GPU. It's like buying a Ferrari with a Civic engine.`);
+                        } else if (gpuLower.includes('3070')) {
+                            roasts.push(`RTX 3070? The middle child of GPUs - not budget enough to be practical, not powerful enough to brag about. Just mediocre... like your gaming skills.`);
+                        } else if (gpuLower.includes('3080') || gpuLower.includes('3090')) {
+                            roasts.push(`RTX 3080/3090? Someone's compensating for something. Hope you enjoy those extra frames while eating ramen for the next year to pay it off.`);
+                        } else {
+                            roasts.push(`An RTX 30 series card? Let me guess, you either overpaid during the shortage or bought it just in time for the 40 series to make it obsolete.`);
+                        }
+                    } 
+                    // RTX 40 series
+                    else if (gpuLower.includes('rtx 40') || gpuLower.includes('rtx 4050') || gpuLower.includes('rtx 4060') || 
+                             gpuLower.includes('rtx 4070') || gpuLower.includes('rtx 4080') || gpuLower.includes('rtx 4090')) {
+                        
+                        if (gpuLower.includes('4090')) {
+                            roasts.push(`RTX 4090? Your electricity bill must be higher than your rent. All that power just to play Fortnite and browse Reddit. Impressive waste of resources.`);
+                        } else if (gpuLower.includes('4080')) {
+                            roasts.push(`RTX 4080? You couldn't quite justify the 4090, so you settled for "almost top-tier". Story of your life, really.`);
+                        } else if (gpuLower.includes('4070') || gpuLower.includes('4060')) {
+                            roasts.push(`RTX 4060/4070? You paid current-gen prices for last-gen performance. Marketing teams love people like you.`);
+                        } else {
+                            roasts.push(`RTX 40 series card? Congratulations on your space heater that occasionally runs games.`);
+                        }
+                    }
+                    // RTX 20 series
+                    else if (gpuLower.includes('rtx 20') || gpuLower.includes('rtx 2060') || gpuLower.includes('rtx 2070') || 
+                             gpuLower.includes('rtx 2080')) {
+                        roasts.push(`An RTX 20 series card in ${new Date().getFullYear()}? That's not vintage, that's just outdated. Time to upgrade or admit you're stuck in 2019.`);
+                    }
+                    // GTX series
+                    else if (gpuLower.includes('gtx 16') || gpuLower.includes('gtx 1660') || gpuLower.includes('gtx 1650')) {
+                        roasts.push(`GTX 16 series? Ah, the "I can't afford RTX but still want a modern card" special. It's the GPU equivalent of off-brand cereal.`);
+                    }
+                    else if (gpuLower.includes('gtx 10') || gpuLower.includes('gtx 1060') || gpuLower.includes('gtx 1070') || 
+                             gpuLower.includes('gtx 1080')) {
+                        roasts.push(`A GTX 10 series card? What's next, bringing back fidget spinners? Your GPU is so old it qualifies for retirement benefits.`);
+                    }
+                    else if (gpuLower.includes('gtx 9') || gpuLower.includes('gtx 980') || gpuLower.includes('gtx 970') || 
+                             gpuLower.includes('gtx 960') || gpuLower.includes('gtx 950')) {
+                        roasts.push(`GTX 9 series? That GPU is so ancient it probably came with a free AOL CD. Is your motherboard connected by telegraph?`);
+                    }
+                    else {
+                        roasts.push(`That NVIDIA GPU is so old, it probably thinks ray tracing is something fishermen do.`);
+                    }
+                }
+                // AMD GPU Detection
+                else if (combinedGpuInfo.includes('amd') || combinedGpuInfo.includes('radeon') || vendorLower.includes('ati technologies')) {
+                    // Add vendor-specific roast
+                    roasts.push(`AMD GPU user? I admire your bravery. Nothing says "I like to live dangerously" like rolling the dice on those drivers every update.`);
+                    
+                    if (gpuLower.includes('rx 7') || gpuLower.includes('rx 7900') || gpuLower.includes('rx 7800') ||
+                        gpuLower.includes('rx 7700') || gpuLower.includes('rx 7600')) {
+                        roasts.push(`RX 7000 series? Bold of you to choose the underdog. Now you can experience driver issues while supporting the little guy!`);
+                    }
+                    else if (gpuLower.includes('rx 6') || gpuLower.includes('rx 6900') || gpuLower.includes('rx 6800') ||
+                             gpuLower.includes('rx 6700') || gpuLower.includes('rx 6600')) {
+                        roasts.push(`RX 6000 series? I see you like to live dangerously... with outdated ray tracing and a side of driver crashes.`);
+                    }
+                    else if (gpuLower.includes('rx 5') || gpuLower.includes('rx 5700') || gpuLower.includes('rx 5600') ||
+                             gpuLower.includes('rx 5500')) {
+                        roasts.push(`RX 5000 series? That's not a GPU, it's a space heater with HDMI ports. Hope your case has good airflow.`);
+                    }
+                    else {
+                        roasts.push(`An AMD GPU? Did you enjoy building your space heater that occasionally runs games? I bet you tell everyone "it's actually better value per dollar" to cope.`);
+                    }
+                }
+                // Intel GPUs
+                else if (combinedGpuInfo.includes('intel') || combinedGpuInfo.includes('iris') || combinedGpuInfo.includes('uhd')) {
+                    // Add vendor-specific roast
+                    roasts.push(`Intel graphics? I didn't know we were roasting calculators today. I'll try to use smaller words so your GPU can keep up.`);
+                    
+                    if (gpuLower.includes('arc')) {
+                        roasts.push(`Intel Arc? Ah, the "I like to be a beta tester" GPU. Brave of you to help Intel debug their drivers on your own time.`);
+                    } else {
+                        roasts.push(`Integrated Intel graphics? That's not a GPU, it's a slideshow generator. PowerPoint has better frame rates than your "gaming" setup.`);
+                    }
+                }
+                else {
+                    roasts.push(`I can't even identify that GPU properly. It's either too obscure or too embarrassing for your computer to admit what it is.`);
+                }
+            }
+            
+            // Add a random general roast
+            const generalRoasts = [
+                "Your PC is so slow, it takes screenshots in installments.",
+                "Your hardware is so outdated, archaeologists are fighting over who gets to display it in their museum.",
+                "That setup is so weak, it gets bullied by calculators.",
+                "Your computer doesn't crash because of errors; it crashes out of embarrassment.",
+                "Your PC doesn't need an antivirus; viruses take one look and leave out of pity.",
+                "Your hardware specs read like a eulogy for technology.",
+                "Your PC is so slow that Internet Explorer feels bad for it.",
+                "When you try to run Crysis, your PC doesn't ask 'Can it run Crysis?' it asks 'What is Crysis?'"
+            ];
+            
+            roasts.push(generalRoasts[Math.floor(Math.random() * generalRoasts.length)]);
+            
+            // Add a final crushing blow
+            roasts.push("Look, I'm just a website, and even I feel sorry for whatever digital abomination you call a computer. Maybe it's time for an upgrade... or ten.");
+            
+            return roasts;
+        }
+    </script>
+</body>
+</html>
